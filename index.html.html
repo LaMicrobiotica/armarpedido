@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Armar Pedido · Fermentos</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; padding: 1.5rem 1rem; }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; color: #2d2d2d; }
+    .subtitle { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+    .container { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: 1fr 310px; gap: 1.5rem; }
+    @media (max-width: 720px) { .container { grid-template-columns: 1fr; } }
+    .section { margin-bottom: 1.5rem; }
+    .step-label { font-size: 11px; color: #888; margin-bottom: 5px; letter-spacing: 0.05em; text-transform: uppercase; }
+    .step-title { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+    .step-desc { font-size: 13px; color: #888; margin-bottom: 12px; }
+    .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .mode-card { border: 1.5px solid #ddd; border-radius: 14px; padding: 16px; cursor: pointer; background: #fff; text-align: left; width: 100%; }
+    .mode-card.active { border-color: #3C3489; background: #EEEDFE; }
+    .mode-name { font-size: 15px; font-weight: 700; color: #333; margin-bottom: 8px; }
+    .mode-card.active .mode-name { color: #3C3489; }
+    .mode-line { font-size: 12px; color: #777; line-height: 1.7; }
+    .mode-card.active .mode-line { color: #534AB7; }
+    .mode-tag { font-size: 11px; color: #aaa; margin-top: 10px; font-style: italic; }
+    .mode-card.active .mode-tag { color: #7F77DD; }
+    .pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill { padding: 7px 16px; font-size: 13px; border-radius: 999px; border: 1px solid #ddd; background: #fff; color: #555; cursor: pointer; }
+    .pill.active { background: #3C3489; color: #fff; border-color: #3C3489; font-weight: 500; }
+    .badge { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; margin-left: 5px; }
+    .pill:not(.active) .badge { background: #eee; color: #666; }
+    .pill.active .badge { background: rgba(255,255,255,0.25); color: #fff; }
+    .carrito { display: flex; flex-direction: column; gap: 10px; }
+    .carrito-row { background: #fff; border: 1px solid #e8e8e8; border-radius: 12px; padding: 14px; display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 10px; align-items: center; }
+    .carrito-row select { padding: 8px 10px; font-size: 13px; border-radius: 8px; border: 1px solid #ddd; background: #fafafa; color: #333; }
+    .qty-ctrl { display: flex; align-items: center; gap: 6px; }
+    .qty-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #ddd; background: #fff; font-size: 16px; cursor: pointer; }
+    .qty-num { font-size: 14px; font-weight: 500; min-width: 20px; text-align: center; }
+    .remove-btn { background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer; padding: 4px; }
+    .remove-btn:hover { color: #e05c3a; }
+    .add-item-btn { display: flex; align-items: center; gap: 6px; padding: 10px 14px; font-size: 13px; border-radius: 10px; border: 1.5px dashed #ccc; background: transparent; color: #888; cursor: pointer; width: fit-content; margin-top: 4px; }
+    .add-item-btn:hover { border-color: #3C3489; color: #3C3489; }
+    /* Combinaciones */
+    .combo-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .combo-tab { padding: 6px 14px; font-size: 13px; border-radius: 999px; border: 1px solid #ddd; background: #fff; color: #555; cursor: pointer; position: relative; }
+    .combo-tab.active { border-color: #3C3489; background: #EEEDFE; color: #3C3489; font-weight: 500; }
+    .combo-tab.done::after { content: '✓'; position: absolute; top: -6px; right: -4px; font-size: 11px; background: #1D9E75; color: #fff; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
+    .add-combo-btn { padding: 6px 14px; font-size: 13px; border-radius: 999px; border: 1.5px dashed #ccc; background: transparent; color: #888; cursor: pointer; }
+    .add-combo-btn:hover { border-color: #3C3489; color: #3C3489; }
+    .sel-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #e8e8e8; font-size: 13px; }
+    .sel-table th { padding: 8px 12px; text-align: center; font-size: 11px; font-weight: 600; color: #888; background: #fafafa; border-bottom: 1px solid #e8e8e8; letter-spacing: 0.03em; }
+    .sel-table th:first-child { text-align: left; width: 38%; }
+    .sel-table td { padding: 9px 12px; border-bottom: 1px solid #f5f5f5; color: #555; text-align: center; vertical-align: middle; }
+    .sel-table td:first-child { text-align: left; font-weight: 500; color: #333; }
+    .sel-table tr:last-child td { border-bottom: none; }
+    .sel-table tr.new-prod td { border-top: 1px solid #f0f0f0; }
+    .sel-cb { width: 17px; height: 17px; cursor: pointer; accent-color: #3C3489; }
+    .sel-cb:disabled { cursor: not-allowed; opacity: 0.3; }
+    .combo-counter { font-size: 13px; color: #666; margin-bottom: 10px; }
+    .combo-counter strong { color: #3C3489; }
+    .modal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    @media (max-width: 500px) { .modal-grid { grid-template-columns: 1fr; } }
+    .modal-card { border: 1px solid #ddd; border-radius: 10px; padding: 12px; cursor: pointer; background: #fff; text-align: left; width: 100%; }
+    .modal-card.active { border-color: #3C3489; background: #EEEDFE; }
+    .modal-name { font-size: 13px; font-weight: 600; color: #333; }
+    .modal-card.active .modal-name { color: #3C3489; }
+    .modal-sub { font-size: 11px; color: #888; margin-top: 2px; }
+    .modal-card.active .modal-sub { color: #534AB7; }
+    .modal-disc { font-size: 12px; color: #1D9E75; font-weight: 500; margin-top: 4px; }
+    .field-group { display: flex; flex-direction: column; gap: 10px; }
+    .field-group input { width: 100%; padding: 10px 12px; font-size: 14px; border-radius: 8px; border: 1px solid #ddd; background: #fff; color: #333; }
+    .field-group input:focus { outline: none; border-color: #3C3489; }
+    .proforma { background: #fff; border: 1px solid #e8e8e8; border-radius: 14px; padding: 20px; position: sticky; top: 1rem; }
+    .pf-title { font-size: 15px; font-weight: 600; color: #2d2d2d; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0; }
+    .pf-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; }
+    .pf-label { color: #888; }
+    .pf-val { color: #333; font-weight: 500; }
+    .pf-divider { border: none; border-top: 1px solid #f0f0f0; margin: 10px 0; }
+    .pf-discount { color: #1D9E75; }
+    .pf-total-row { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; margin-top: 10px; }
+    .pf-period { font-size: 12px; color: #aaa; margin-top: 4px; text-align: right; }
+    .pf-combo { font-size: 12px; color: #555; margin-bottom: 2px; }
+    .pf-combo-item { font-size: 12px; color: #888; padding-left: 8px; margin-bottom: 1px; }
+    .pf-empty { font-size: 13px; color: #aaa; text-align: center; padding: 2rem 0; line-height: 1.8; }
+    .wa-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; margin-top: 14px; font-size: 14px; font-weight: 600; border-radius: 10px; border: none; background: #25D366; color: #fff; cursor: pointer; text-decoration: none; }
+    .wa-btn.disabled { background: #e0e0e0; color: #aaa; pointer-events: none; cursor: default; }
+  </style>
+</head>
+<body>
+  <h1>Armar Pedido</h1>
+  <p class="subtitle">Fermentos artesanales · Kimchi · Chukrut · Sauerkraut</p>
+
+  <div class="container">
+    <div>
+      <div class="section">
+        <div class="step-label">Paso 1</div>
+        <div class="step-title">¿Cómo querés comprar?</div>
+        <div class="mode-grid">
+          <button class="mode-card" onclick="setMode('normal', this)">
+            <div class="mode-name">🛒 Pedido semanal</div>
+            <div class="mode-line">🗓 Pedidos cierran miércoles a medianoche</div>
+            <div class="mode-line">🚚 Entrega a domicilio: viernes</div>
+            <div class="mode-tag">Paga por Sinpe</div>
+          </button>
+          <button class="mode-card" onclick="setMode('suscripcion', this)">
+            <div class="mode-name">🌱 Membresía Viva</div>
+            <div class="mode-line">🧩 Armá tu combinación ideal</div>
+            <div class="mode-line">📅 Elegí la modalidad de membresía</div>
+            <div class="mode-line">📦 Recibí tu dosis mensual en casa</div>
+            <div class="mode-tag">Sencilla · Dúo · Trío</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- PEDIDO NORMAL -->
+      <div id="normal-section" style="display:none;">
+        <div class="section">
+          <div class="step-label">Paso 2</div>
+          <div class="step-title">Elegí tus frascos</div>
+          <div class="carrito" id="carrito"></div>
+          <button class="add-item-btn" onclick="agregarItem()">＋ Agregar frasco</button>
+        </div>
+        <div class="section" id="normal-cliente-section" style="display:none;">
+          <div class="step-label">Paso 3</div>
+          <div class="step-title">Tus datos</div>
+          <div class="field-group">
+            <input type="text" id="n-nombre" placeholder="Nombre completo" oninput="renderProforma()" />
+            <input type="tel" id="n-tel" placeholder="Teléfono" oninput="renderProforma()" />
+            <input type="text" id="n-ubicacion" placeholder="Ubicación / dirección de entrega" oninput="renderProforma()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- MEMBRESÍA VIVA -->
+      <div id="suscrip-section" style="display:none;">
+        <div class="section">
+          <div class="step-label">Paso 2</div>
+          <div class="step-title">Elegí tu combinación</div>
+          <div class="pill-group">
+            <button class="pill" onclick="setPkg('trio', this)">Trío <span class="badge">3 frascos por mes</span></button>
+            <button class="pill" onclick="setPkg('duo', this)">Dúo <span class="badge">2 medianos por mes</span></button>
+            <button class="pill" onclick="setPkg('sencillo', this)">Sencilla <span class="badge">1 frasco por mes</span></button>
+          </div>
+        </div>
+        <div class="section" id="modal-section" style="display:none;">
+          <div class="step-label">Paso 3</div>
+          <div class="step-title">Elegí tu membresía</div>
+          <div class="modal-grid">
+            <button class="modal-card" onclick="setModal('trimestral', this)">
+              <div class="modal-name">Membresía Simbiótica</div>
+              <div class="modal-sub">Trimestral · 3 meses</div>
+              <div class="modal-disc">−5%</div>
+            </button>
+            <button class="modal-card" onclick="setModal('semestral', this)">
+              <div class="modal-name">Membresía Regenerativa</div>
+              <div class="modal-sub">Semestral · 6 meses</div>
+              <div class="modal-disc">−10%</div>
+            </button>
+            <button class="modal-card" onclick="setModal('anual', this)">
+              <div class="modal-name">Membresía Biodiversa</div>
+              <div class="modal-sub">Anual · 12 meses</div>
+              <div class="modal-disc">−15%</div>
+            </button>
+          </div>
+        </div>
+        <div class="section" id="combos-section" style="display:none;">
+          <div class="step-label">Paso 4</div>
+          <div class="step-title">Armá tus combinaciones</div>
+          <div class="step-desc" id="combos-desc"></div>
+          <div class="combo-tabs" id="combo-tabs"></div>
+          <div class="combo-counter" id="combo-counter"></div>
+          <table class="sel-table" id="sel-table">
+            <thead><tr>
+              <th>Fermento</th>
+              <th>Pequeño<br><span style="font-weight:400;color:#bbb">200g</span></th>
+              <th>Mediano<br><span style="font-weight:400;color:#bbb">473g</span></th>
+              <th>Grande<br><span style="font-weight:400;color:#bbb">750g</span></th>
+            </tr></thead>
+            <tbody id="sel-body"></tbody>
+          </table>
+        </div>
+        <div class="section" id="suscrip-cliente-section" style="display:none;">
+          <div class="step-label">Paso 5</div>
+          <div class="step-title">Tus datos</div>
+          <div class="field-group">
+            <input type="text" id="s-nombre" placeholder="Nombre completo" oninput="renderProforma()" />
+            <input type="tel" id="s-tel" placeholder="Teléfono" oninput="renderProforma()" />
+            <input type="text" id="s-ubicacion" placeholder="Ubicación / dirección de entrega" oninput="renderProforma()" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="step-label">Tu proforma</div>
+      <div class="proforma" id="proforma">
+        <div class="pf-empty">Elegí cómo querés comprar<br>para comenzar</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const precios = {
+      kimchi:         { pequeno: 3500, mediano: 6500, grande: 10000 },
+      chukrut_dorado: { pequeno: 3200, mediano: 6200, grande: 9500  },
+      chukrut_morado: { pequeno: 3200, mediano: 6200, grande: 9500  },
+      sauerkraut:     { pequeno: 3200, mediano: 6000, grande: 9200  },
+    };
+    const prodNames = { kimchi:'Kimchi', chukrut_dorado:'Chukrut Dorado', chukrut_morado:'Chukrut Morado', sauerkraut:'Sauerkraut' };
+    const tamNames  = { pequeno:'pequeño', mediano:'mediano', grande:'grande' };
+    const tams = ['pequeno','mediano','grande'];
+    const modalidades = {
+      trimestral: { meses:3,  mult:1, desc:0.05, label:'Membresía Simbiótica',   sub:'Trimestral' },
+      semestral:  { meses:6,  mult:2, desc:0.10, label:'Membresía Regenerativa', sub:'Semestral'  },
+      anual:      { meses:12, mult:4, desc:0.15, label:'Membresía Biodiversa',   sub:'Anual'      },
+    };
+    const pkgMax     = { trio:3, duo:2, sencillo:1 };
+    const pkgLabel   = { trio:'Trío', duo:'Dúo', sencillo:'Sencilla' };
+    const pkgAllowed = { trio:['pequeno','mediano','grande'], duo:['mediano'], sencillo:['mediano','grande'] };
+
+    const ENVIO=2500, WA='50670993603', MAX_COMBOS=3;
+    let mode=null, pkg=null, modal=null;
+    let combos=[[]]; // array of arrays: combos[i] = [{prod,size,price}]
+    let activeCombo=0;
+    let items=[{prod:'kimchi',tam:'mediano',qty:1}];
+
+    function fmt(n){ return '₡'+Math.round(n).toLocaleString('es-CR'); }
+
+    function setMode(m,btn){
+      mode=m; pkg=null; modal=null; combos=[[]]; activeCombo=0;
+      document.querySelectorAll('.mode-card').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('normal-section').style.display=m==='normal'?'block':'none';
+      document.getElementById('suscrip-section').style.display=m==='suscripcion'?'block':'none';
+      if(m==='normal') renderCarrito();
+      renderProforma();
+    }
+
+    function renderCarrito(){
+      const el=document.getElementById('carrito');
+      el.innerHTML=items.map((item,i)=>`
+        <div class="carrito-row">
+          <select onchange="updateItem(${i},'prod',this.value)">
+            ${Object.keys(precios).map(p=>`<option value="${p}" ${item.prod===p?'selected':''}>${prodNames[p]}</option>`).join('')}
+          </select>
+          <select onchange="updateItem(${i},'tam',this.value)">
+            ${tams.map(t=>`<option value="${t}" ${item.tam===t?'selected':''}>${tamNames[t]} · ${fmt(precios[item.prod][t])}</option>`).join('')}
+          </select>
+          <div class="qty-ctrl">
+            <button class="qty-btn" onclick="updateQty(${i},-1)">−</button>
+            <span class="qty-num">${item.qty}</span>
+            <button class="qty-btn" onclick="updateQty(${i},1)">＋</button>
+          </div>
+          <button class="remove-btn" onclick="removeItem(${i})">✕</button>
+        </div>`).join('');
+      document.getElementById('normal-cliente-section').style.display=items.length?'block':'none';
+      renderProforma();
+    }
+    function updateItem(i,f,v){ items[i][f]=v; renderCarrito(); }
+    function updateQty(i,d){ items[i].qty=Math.max(1,items[i].qty+d); renderCarrito(); }
+    function removeItem(i){ if(items.length===1)return; items.splice(i,1); renderCarrito(); }
+    function agregarItem(){ items.push({prod:'kimchi',tam:'mediano',qty:1}); renderCarrito(); }
+
+    function setPkg(p,btn){
+      pkg=p; modal=null; combos=[[]]; activeCombo=0;
+      document.querySelectorAll('.pill').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.modal-card').forEach(b=>b.classList.remove('active'));
+      document.getElementById('modal-section').style.display='block';
+      document.getElementById('combos-section').style.display='none';
+      document.getElementById('suscrip-cliente-section').style.display='none';
+      renderProforma();
+    }
+
+    function setModal(m,btn){
+      modal=m; combos=[[]]; activeCombo=0;
+      document.querySelectorAll('.modal-card').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('combos-section').style.display='block';
+      const mod=modalidades[m];
+      document.getElementById('combos-desc').textContent=
+        `Elegí hasta ${MAX_COMBOS} combinaciones distintas. Se rotarán durante tus ${mod.meses} meses (cada una se repite ×${mod.mult}).`;
+      renderCombos();
+      renderProforma();
+    }
+
+    function renderCombos(){
+      const max=pkgMax[pkg];
+      const allowed=pkgAllowed[pkg];
+      const sel=combos[activeCombo]||[];
+      const count=sel.length;
+      const full=count>=max;
+
+      // Tabs
+      const tabsEl=document.getElementById('combo-tabs');
+      tabsEl.innerHTML=combos.map((c,i)=>{
+        const done=c.length>=max;
+        return `<button class="combo-tab ${i===activeCombo?'active':''} ${done?'done':''}"
+          onclick="setActiveCombo(${i})">Combinación ${i+1}</button>`;
+      }).join('');
+      if(combos.length<MAX_COMBOS){
+        tabsEl.innerHTML+=`<button class="add-combo-btn" onclick="addCombo()">＋ Agregar combinación</button>`;
+      }
+
+      // Counter + same combo button
+      const firstDoneNow = combos[0].length >= max;
+      const sameBtnHTML = (firstDoneNow && combos.length === 1)
+        ? `<button onclick="usarSiempreEsta()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;margin-bottom:10px;font-size:13px;border-radius:999px;border:1px solid #1D9E75;background:#F0FBF6;color:#1D9E75;cursor:pointer;font-weight:500;">✓ Quiero siempre esta combinación</button>`
+        : '';
+      document.getElementById('combo-counter').innerHTML=
+        sameBtnHTML + `<strong>${count}</strong> de ${max} frasco${max>1?'s':''} elegidos para esta combinación`;
+
+      // Table
+      const tbody=document.getElementById('sel-body');
+      tbody.innerHTML=Object.keys(precios).map(prod=>{
+        return `<tr class="new-prod">
+          <td>${prodNames[prod]}</td>
+          ${tams.map(tam=>{
+            const isAllowed=allowed.includes(tam);
+            const checked=sel.some(s=>s.prod===prod&&s.size===tam);
+            const disabled=!isAllowed||(!checked&&full);
+            return `<td>${isAllowed
+              ?`<input type="checkbox" class="sel-cb" ${checked?'checked':''} ${disabled?'disabled':''}
+                  onchange="toggleComboItem('${prod}','${tam}',this.checked)">`
+              :`<span style="color:#e0e0e0">—</span>`}</td>`;
+          }).join('')}
+        </tr>`;
+      }).join('');
+
+      // Show datos if at least combo 1 is complete
+      const allDone=combos.every(c=>c.length>=max);
+      const firstDone=combos[0].length>=max;
+      document.getElementById('suscrip-cliente-section').style.display=firstDone?'block':'none';
+    }
+
+    function setActiveCombo(i){ activeCombo=i; renderCombos(); }
+
+    function usarSiempreEsta(){
+      // Fill all combo slots with a copy of combo 0
+      const base = combos[0].map(s=>({...s}));
+      combos = [base, base.map(s=>({...s})), base.map(s=>({...s}))].slice(0, MAX_COMBOS);
+      activeCombo = 0;
+      document.getElementById('suscrip-cliente-section').style.display = 'block';
+      renderCombos();
+      renderProforma();
+    }
+
+    function addCombo(){
+      if(combos.length>=MAX_COMBOS) return;
+      combos.push([]);
+      activeCombo=combos.length-1;
+      renderCombos();
+      renderProforma();
+    }
+
+    function toggleComboItem(prod,size,checked){
+      const max=pkgMax[pkg];
+      const sel=combos[activeCombo];
+      if(checked){
+        if(sel.length<max) sel.push({prod,size,price:precios[prod][size]});
+      } else {
+        const idx=sel.findIndex(s=>s.prod===prod&&s.size===size);
+        if(idx>-1) sel.splice(idx,1);
+      }
+      renderCombos();
+      renderProforma();
+    }
+
+    function getCliente(prefix){
+      const n=document.getElementById(prefix+'-nombre');
+      const t=document.getElementById(prefix+'-tel');
+      const u=document.getElementById(prefix+'-ubicacion');
+      return {nombre:n?n.value.trim():'',tel:t?t.value.trim():'',ubicacion:u?u.value.trim():''};
+    }
+    function clienteHTML(c){
+      if(!c.nombre&&!c.tel&&!c.ubicacion) return '';
+      return `<div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;">
+        ${c.nombre?`<div class="pf-row"><span class="pf-label">Nombre</span><span class="pf-val">${c.nombre}</span></div>`:''}
+        ${c.tel?`<div class="pf-row"><span class="pf-label">Teléfono</span><span class="pf-val">${c.tel}</span></div>`:''}
+        ${c.ubicacion?`<div class="pf-row"><span class="pf-label">Ubicación</span><span class="pf-val" style="text-align:right;max-width:160px">${c.ubicacion}</span></div>`:''}
+      </div>`;
+    }
+    function waBtnHTML(url,listo){
+      return listo
+        ?`<a href="${url}" target="_blank" class="wa-btn">💬 Terminar la compra en WhatsApp</a>`
+        :`<div class="wa-btn disabled">Completá tus datos para continuar</div>`;
+    }
+
+    function renderProforma(){
+      const el=document.getElementById('proforma');
+      if(!mode){el.innerHTML='<div class="pf-empty">Elegí cómo querés comprar<br>para comenzar</div>';return;}
+
+      if(mode==='normal'){
+        const validos=items.filter(it=>it.qty>0);
+        if(!validos.length){el.innerHTML='<div class="pf-empty">Agregá al menos un frasco</div>';return;}
+        const subtotal=validos.reduce((s,it)=>s+precios[it.prod][it.tam]*it.qty,0);
+        const total=subtotal+ENVIO;
+        const c=getCliente('n');
+        const listo=c.nombre&&c.tel&&c.ubicacion;
+        const lineas=validos.map(it=>`  • ${prodNames[it.prod]} ${tamNames[it.tam]} x${it.qty}: ${fmt(precios[it.prod][it.tam]*it.qty)}`).join('\n');
+        const msg=encodeURIComponent(`Hola! Quiero hacer un pedido 🥬\n\n*Datos*\nNombre: ${c.nombre}\nTeléfono: ${c.tel}\nUbicación: ${c.ubicacion}\n\n*Mi pedido*\n${lineas}\n\nSubtotal: ${fmt(subtotal)}\nEntrega a domicilio: ${fmt(ENVIO)}\n*Total a pagar: ${fmt(total)}*`);
+        const filas=validos.map(it=>`<div class="pf-row"><span class="pf-label">${prodNames[it.prod]} ${tamNames[it.tam]} x${it.qty}</span><span class="pf-val">${fmt(precios[it.prod][it.tam]*it.qty)}</span></div>`).join('');
+        el.innerHTML=`<div class="pf-title">🛒 Pedido semanal</div>${clienteHTML(c)}${filas}
+          <hr class="pf-divider">
+          <div class="pf-row"><span class="pf-label">Subtotal</span><span class="pf-val">${fmt(subtotal)}</span></div>
+          <div class="pf-row"><span class="pf-label">Entrega a domicilio</span><span class="pf-val">${fmt(ENVIO)}</span></div>
+          <hr class="pf-divider">
+          <div class="pf-total-row"><span>Total a pagar</span><span>${fmt(total)}</span></div>
+          ${waBtnHTML(`https://wa.me/${WA}?text=${msg}`,listo)}`;
+        return;
+      }
+
+      if(!pkg){el.innerHTML='<div class="pf-empty">Elegí tu combinación para continuar</div>';return;}
+      if(!modal){el.innerHTML='<div class="pf-empty">Elegí tu membresía para continuar</div>';return;}
+      const max=pkgMax[pkg];
+      const completedCombos=combos.filter(c=>c.length>=max);
+      if(!completedCombos.length){el.innerHTML='<div class="pf-empty">Completá al menos una combinación para ver la proforma</div>';return;}
+
+      const m=modalidades[modal];
+      const subtotalCombos=completedCombos.reduce((s,c)=>s+c.reduce((a,i)=>a+i.price,0),0);
+      const subtotalPeriodo=subtotalCombos*m.mult;
+      const descMonto=subtotalPeriodo*m.desc;
+      const totalMembresia=subtotalPeriodo-descMonto;
+      const totalEnvio=ENVIO*m.meses;
+      const granTotal=totalMembresia+totalEnvio;
+      const c=getCliente('s');
+      const listo=c.nombre&&c.tel&&c.ubicacion;
+
+      const lineasWA=completedCombos.map((combo,i)=>
+        `Combinación ${i+1}: ${combo.map(s=>`${prodNames[s.prod]} ${tamNames[s.size]}`).join(' + ')} (${fmt(combo.reduce((a,s)=>a+s.price,0))})`
+      ).join('\n');
+      const msg=encodeURIComponent(`Hola! Quiero confirmar mi Membresía Viva 🌱\n\n*Datos*\nNombre: ${c.nombre}\nTeléfono: ${c.tel}\nUbicación: ${c.ubicacion}\n\n*${pkgLabel[pkg]} · ${m.label} (${m.sub})*\n${lineasWA}\nCada combinación se repite ×${m.mult}\n\nSubtotal ${m.sub.toLowerCase()}: ${fmt(subtotalPeriodo)}\nDesc. ${m.label} (${Math.round(m.desc*100)}%): -${fmt(descMonto)}\nTotal membresía: ${fmt(totalMembresia)}\nEntrega a domicilio (${m.meses} × ₡2,500): ${fmt(totalEnvio)}\n*Total a pagar: ${fmt(granTotal)}*`);
+
+      const filasCombos=completedCombos.map((combo,i)=>{
+        const subCombo=combo.reduce((a,s)=>a+s.price,0);
+        return `<div class="pf-combo">Combinación ${i+1} · ${fmt(subCombo)} × ${m.mult}</div>
+          ${combo.map(s=>`<div class="pf-combo-item">· ${prodNames[s.prod]} ${tamNames[s.size]}</div>`).join('')}`;
+      }).join('');
+
+      el.innerHTML=`<div class="pf-title">🌱 ${m.label}</div>${clienteHTML(c)}
+        ${filasCombos}
+        <hr class="pf-divider">
+        <div class="pf-row"><span class="pf-label">Subtotal ${m.sub.toLowerCase()}</span><span class="pf-val">${fmt(subtotalPeriodo)}</span></div>
+        <div class="pf-row"><span class="pf-label pf-discount">Desc. ${m.label} (${Math.round(m.desc*100)}%)</span><span class="pf-val pf-discount">−${fmt(descMonto)}</span></div>
+        <div class="pf-row"><span class="pf-label">Total membresía</span><span class="pf-val">${fmt(totalMembresia)}</span></div>
+        <div class="pf-row"><span class="pf-label">Entrega a domicilio (${m.meses} × ₡2,500)</span><span class="pf-val">${fmt(totalEnvio)}</span></div>
+        <hr class="pf-divider">
+        <div class="pf-total-row"><span>Total a pagar</span><span>${fmt(granTotal)}</span></div>
+        <div class="pf-period">${m.meses} entregas mensuales · ${m.sub} · ×${m.mult} por combinación</div>
+        ${waBtnHTML(`https://wa.me/${WA}?text=${msg}`,listo)}`;
+    }
+  </script>
+</body>
+</html>
